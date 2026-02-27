@@ -8,9 +8,11 @@ use axum::{
 use http::{HeaderName, HeaderValue};
 use regex::bytes::Regex;
 use reqwest_middleware::ClientWithMiddleware;
+use tokio::process::Command;
+use urlencoding::decode;
 
 use crate::{
-    config::{LocalProxieConfig, ProxieConfig, RemoteProxieConfig},
+    config::{CommandProxieConfig, LocalProxieConfig, ProxieConfig, RemoteProxieConfig},
     state::AppState,
 };
 
@@ -108,6 +110,56 @@ async fn local_proxie_handler(
     return Ok(response);
 }
 
+async fn command_proxie_handler(
+    path: &str,
+    proxie_cfg: &CommandProxieConfig,
+) -> Result<Response, (StatusCode, String)> {
+    let mut command = Command::new(&proxie_cfg.target);
+    command.args(&proxie_cfg.args);
+
+    let param = decode(path)
+        .map_err(|e| (StatusCode::BAD_REQUEST, e.to_string()))?
+        .into_owned();
+
+    command.args(param.split_whitespace());
+
+    let output = command
+        .output()
+        .await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+
+    if !output.status.success() {
+        return Err((
+            StatusCode::BAD_REQUEST,
+            String::from_utf8_lossy(&output.stderr).to_string(),
+        ));
+    }
+
+    let mut body = output.stdout;
+
+    for (pattern, rep) in &proxie_cfg.rewrite {
+        let re = match Regex::new(pattern) {
+            Ok(r) => r,
+            Err(_) => continue,
+        };
+
+        body = re.replace_all(&body, rep.as_bytes()).into_owned();
+    }
+
+    let mut downstream_headers = HeaderMap::new();
+
+    for (k, v) in &proxie_cfg.downstream_headers {
+        if let (Ok(name), Ok(val)) = (HeaderName::from_str(k), HeaderValue::from_str(v)) {
+            downstream_headers.insert(name, val);
+        }
+    }
+
+    let mut response = Response::new(body.into());
+    *response.headers_mut() = downstream_headers;
+
+    return Ok(response);
+}
+
 pub async fn handler(
     Path((id, path)): Path<(String, String)>,
     State(state): State<AppState>,
@@ -120,5 +172,6 @@ pub async fn handler(
     match proxie_cfg {
         ProxieConfig::Remote(remote) => remote_proxie_handler(&path, &remote, &state.client).await,
         ProxieConfig::Local(local) => local_proxie_handler(&path, &local).await,
+        ProxieConfig::Command(command) => command_proxie_handler(&path, &command).await,
     }
 }
