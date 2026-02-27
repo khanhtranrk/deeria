@@ -45,6 +45,20 @@ pub struct LocalProxieConfig {
 }
 
 #[derive(Deserialize)]
+pub struct CommandProxieConfig {
+    pub target: String,
+
+    #[serde(default)]
+    pub args: Vec<String>,
+
+    #[serde(default)]
+    pub downstream_headers: HashMap<String, String>,
+
+    #[serde(default)]
+    pub rewrite: HashMap<String, String>,
+}
+
+#[derive(Deserialize)]
 #[serde(tag = "type")]
 pub enum ProxieConfig {
     #[serde(rename = "remote")]
@@ -52,6 +66,9 @@ pub enum ProxieConfig {
 
     #[serde(rename = "local")]
     Local(LocalProxieConfig),
+
+    #[serde(rename = "command")]
+    Command(CommandProxieConfig),
 }
 
 pub fn load_config(explicit_path: Option<String>) -> AppConfig {
