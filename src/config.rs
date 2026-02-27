@@ -22,16 +22,26 @@ pub struct ServerConfig {
 #[derive(Deserialize)]
 pub struct RemoteProxieConfig {
     pub target: String,
-    pub upstream_headers: Option<HashMap<String, String>>,
-    pub downstream_headers: Option<HashMap<String, String>>,
-    pub rewrite: Option<HashMap<String, String>>,
+
+    #[serde(default)]
+    pub upstream_headers: HashMap<String, String>,
+
+    #[serde(default)]
+    pub downstream_headers: HashMap<String, String>,
+
+    #[serde(default)]
+    pub rewrite: HashMap<String, String>,
 }
 
 #[derive(Deserialize)]
 pub struct LocalProxieConfig {
     pub target: String,
-    pub downstream_headers: Option<HashMap<String, String>>,
-    pub rewrite: Option<HashMap<String, String>>,
+
+    #[serde(default)]
+    pub downstream_headers: HashMap<String, String>,
+
+    #[serde(default)]
+    pub rewrite: HashMap<String, String>,
 }
 
 #[derive(Deserialize)]
