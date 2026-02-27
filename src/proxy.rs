@@ -22,10 +22,8 @@ async fn remote_proxie_handler(
     let url = format!("{}/{}", proxie_cfg.target.trim_end_matches('/'), path);
 
     let mut req = client.get(url);
-    if let Some(headers) = &proxie_cfg.upstream_headers {
-        for (k, v) in headers {
-            req = req.header(k, v);
-        }
+    for (k, v) in &proxie_cfg.upstream_headers {
+        req = req.header(k, v);
     }
 
     let resp = req
@@ -39,11 +37,9 @@ async fn remote_proxie_handler(
         downstream_headers.insert("content-type", ct.clone());
     }
 
-    if let Some(headers) = &proxie_cfg.downstream_headers {
-        for (k, v) in headers {
-            if let (Ok(name), Ok(val)) = (HeaderName::from_str(k), HeaderValue::from_str(v)) {
-                downstream_headers.insert(name, val);
-            }
+    for (k, v) in &proxie_cfg.downstream_headers {
+        if let (Ok(name), Ok(val)) = (HeaderName::from_str(k), HeaderValue::from_str(v)) {
+            downstream_headers.insert(name, val);
         }
     }
 
@@ -53,15 +49,13 @@ async fn remote_proxie_handler(
         .map_err(|e| (StatusCode::BAD_GATEWAY, format!("Body read error: {}", e)))?
         .to_vec();
 
-    if let Some(rewrite_pairs) = &proxie_cfg.rewrite {
-        for (pattern, rep) in rewrite_pairs {
-            let re = match Regex::new(pattern) {
-                Ok(r) => r,
-                Err(_) => continue,
-            };
+    for (pattern, rep) in &proxie_cfg.rewrite {
+        let re = match Regex::new(pattern) {
+            Ok(r) => r,
+            Err(_) => continue,
+        };
 
-            body = re.replace_all(&body, rep.as_bytes()).into_owned();
-        }
+        body = re.replace_all(&body, rep.as_bytes()).into_owned();
     }
 
     let mut response = Response::new(body.into());
@@ -91,24 +85,20 @@ async fn local_proxie_handler(
         )
     })?;
 
-    if let Some(rewrite_pairs) = &proxie_cfg.rewrite {
-        for (pattern, rep) in rewrite_pairs {
-            let re = match Regex::new(pattern) {
-                Ok(r) => r,
-                Err(_) => continue,
-            };
+    for (pattern, rep) in &proxie_cfg.rewrite {
+        let re = match Regex::new(pattern) {
+            Ok(r) => r,
+            Err(_) => continue,
+        };
 
-            body = re.replace_all(&body, rep.as_bytes()).into_owned();
-        }
+        body = re.replace_all(&body, rep.as_bytes()).into_owned();
     }
 
     let mut downstream_headers = HeaderMap::new();
 
-    if let Some(headers) = &proxie_cfg.downstream_headers {
-        for (k, v) in headers {
-            if let (Ok(name), Ok(val)) = (HeaderName::from_str(k), HeaderValue::from_str(v)) {
-                downstream_headers.insert(name, val);
-            }
+    for (k, v) in &proxie_cfg.downstream_headers {
+        if let (Ok(name), Ok(val)) = (HeaderName::from_str(k), HeaderValue::from_str(v)) {
+            downstream_headers.insert(name, val);
         }
     }
 
