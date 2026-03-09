@@ -3,13 +3,21 @@ mod http_client;
 mod proxy;
 mod state;
 
-use axum::{Router, routing::get};
+use axum::{
+    Router,
+    http::{HeaderMap, header},
+    response::{Html, IntoResponse},
+    routing::get,
+};
 use clap::Parser;
 use state::AppState;
 use std::sync::Arc;
 use tokio::net::TcpListener;
 use tower_http::trace::TraceLayer;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
+
+const HTML: &str = include_str!("../static/index.html");
+const IMAGE: &[u8] = include_bytes!("../static/deeria.png");
 
 #[derive(Parser)]
 struct Args {
@@ -21,6 +29,17 @@ struct Args {
 
     #[arg(long)]
     config: Option<String>,
+}
+
+async fn index_page() -> Html<&'static str> {
+    Html(HTML)
+}
+
+async fn deeria_image() -> impl IntoResponse {
+    let mut headers = HeaderMap::new();
+    headers.insert(header::CONTENT_TYPE, "image/png".parse().unwrap());
+
+    (headers, IMAGE)
 }
 
 #[tokio::main]
@@ -53,6 +72,8 @@ async fn main() {
     let addr = format!("{}:{}", state.config.server.host, state.config.server.port);
 
     let app = Router::new()
+        .route("/", get(index_page))
+        .route("/deeria.png", get(deeria_image))
         .route("/{id}/{*path}", get(proxy::handler))
         .with_state(state)
         .layer(TraceLayer::new_for_http());
