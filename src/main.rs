@@ -16,8 +16,8 @@ use tokio::net::TcpListener;
 use tower_http::trace::TraceLayer;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
-const HTML: &str = include_str!("../static/index.html");
-const IMAGE: &[u8] = include_bytes!("../static/deeria.png");
+const HTML: &str = include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/static/index.html"));
+const IMAGE: &[u8] = include_bytes!(concat!(env!("CARGO_MANIFEST_DIR"), "/static/deeria.png"));
 
 #[derive(Parser)]
 struct Args {

@@ -61,7 +61,7 @@ async fn remote_proxie_handler(
     let mut response = Response::new(body.into());
     *response.headers_mut() = downstream_headers;
 
-    return Ok(response);
+    Ok(response)
 }
 
 async fn local_proxie_handler(
@@ -105,7 +105,7 @@ async fn local_proxie_handler(
     let mut response = Response::new(body.into());
     *response.headers_mut() = downstream_headers;
 
-    return Ok(response);
+    Ok(response)
 }
 
 pub async fn handler(
@@ -118,7 +118,7 @@ pub async fn handler(
     ))?;
 
     match proxie_cfg {
-        ProxieConfig::Remote(remote) => remote_proxie_handler(&path, &remote, &state.client).await,
-        ProxieConfig::Local(local) => local_proxie_handler(&path, &local).await,
+        ProxieConfig::Remote(remote) => remote_proxie_handler(&path, remote, &state.client).await,
+        ProxieConfig::Local(local) => local_proxie_handler(&path, local).await,
     }
 }
