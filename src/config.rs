@@ -70,7 +70,7 @@ pub fn load_config(explicit_path: Option<String>) -> AppConfig {
     }
 
     let content = fs::read_to_string(&config_path)
-        .expect(&format!("Failed to read config at {:?}", config_path));
+        .unwrap_or_else(|_| panic!("Failed to read config at {:?}", config_path));
 
     toml::from_str(&content).expect("Invalid config format")
 }
